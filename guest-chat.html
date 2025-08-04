@@ -1,0 +1,203 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <!-- 页面编号: A-02 /chat -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>客服对话 - 酒店客服系统</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link rel="stylesheet" href="https://unicons.iconscout.com/release/v4.0.0/css/line.css">
+    <style>
+        :root {
+            --primary: #0F62FE;
+            --secondary: #FF6B00;
+            --bg: #F5F7FA;
+        }
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-[system-ui]" x-data="chatApp()">
+    <div class="max-w-lg mx-auto h-screen flex flex-col bg-white">
+        <!-- Header -->
+        <header class="bg-blue-600 text-white p-4 flex items-center justify-between">
+            <div class="flex items-center">
+                <i class="uil uil-building mr-2 text-xl"></i>
+                <div>
+                    <h1 class="font-semibold">房间 1208</h1>
+                    <p class="text-xs opacity-90">
+                        <i class="uil uil-check-circle"></i> 已验证
+                    </p>
+                </div>
+            </div>
+            <button 
+                @click="endChat"
+                data-testid="end-chat"
+                class="text-white hover:bg-blue-700 p-2 rounded"
+            >
+                <i class="uil uil-times text-xl"></i>
+            </button>
+        </header>
+
+        <!-- 消息流区域 -->
+        <div class="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-hide" id="messageContainer">
+            <template x-for="message in messages" :key="message.id">
+                <div :class="message.sender === 'guest' ? 'flex justify-end' : 'flex justify-start'">
+                    <div 
+                        :class="message.sender === 'guest' 
+                            ? 'bg-blue-600 text-white' 
+                            : 'bg-gray-200 text-gray-800'"
+                        class="max-w-xs px-4 py-3 rounded-lg"
+                    >
+                        <p x-text="message.text" class="text-sm"></p>
+                        <p class="text-xs mt-1 opacity-70" x-text="message.time"></p>
+                    </div>
+                </div>
+            </template>
+        </div>
+
+        <!-- 多级菜单 -->
+        <div class="border-t bg-gray-50 p-2" x-show="showMenu">
+            <div class="grid grid-cols-2 gap-2">
+                <template x-for="item in menuItems" :key="item.id">
+                    <button 
+                        @click="selectMenuItem(item)"
+                        :data-testid="'menu-' + item.id"
+                        class="bg-white border border-gray-300 rounded-lg p-3 text-sm hover:bg-blue-50 hover:border-blue-400 transition-colors"
+                    >
+                        <i :class="item.icon" class="text-lg mb-1"></i>
+                        <p x-text="item.label"></p>
+                    </button>
+                </template>
+            </div>
+        </div>
+
+        <!-- 输入区域 -->
+        <div class="border-t p-4 bg-white">
+            <div class="flex items-center space-x-2">
+                <button 
+                    @click="toggleMenu"
+                    data-testid="menu-toggle"
+                    class="p-2 hover:bg-gray-100 rounded-lg"
+                >
+                    <i class="uil uil-apps text-xl text-gray-600"></i>
+                </button>
+                <input 
+                    type="text"
+                    x-model="inputText"
+                    @keyup.enter="sendMessage"
+                    data-testid="message-input"
+                    placeholder="输入消息..."
+                    class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                <button 
+                    @click="sendMessage"
+                    data-testid="send-button"
+                    :disabled="!inputText.trim()"
+                    class="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                    <i class="uil uil-message text-xl"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Mock数据
+        const MOCK_MENU = [
+            { id: 'towel', label: '需要毛巾', icon: 'uil uil-droplet', template: '请送2条浴巾到1208房间' },
+            { id: 'clean', label: '房间清洁', icon: 'uil uil-brush-alt', template: '请安排清洁1208房间' },
+            { id: 'food', label: '餐饮服务', icon: 'uil uil-restaurant', template: '我想点餐' },
+            { id: 'other', label: '其他服务', icon: 'uil uil-ellipsis-h', template: '需要其他帮助' }
+        ];
+
+        const MOCK_MESSAGES = [
+            { id: 1, sender: 'agent', text: '您好！有什么可以帮助您的吗？', time: '10:00' },
+            { id: 2, sender: 'guest', text: '我需要额外的毛巾', time: '10:01' }
+        ];
+
+        function chatApp() {
+            return {
+                messages: [...MOCK_MESSAGES],
+                inputText: '',
+                showMenu: false,
+                menuItems: MOCK_MENU,
+                messageId: 3,
+
+                toggleMenu() {
+                    this.showMenu = !this.showMenu;
+                },
+
+                selectMenuItem(item) {
+                    this.inputText = item.template;
+                    this.showMenu = false;
+                },
+
+                async sendMessage() {
+                    if (!this.inputText.trim()) return;
+
+                    const text = this.inputText;
+                    const time = new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+
+                    // 添加用户消息
+                    this.messages.push({
+                        id: this.messageId++,
+                        sender: 'guest',
+                        text: text,
+                        time: time
+                    });
+
+                    this.inputText = '';
+
+                    // 检查是否需要二次验证（金额大于500）
+                    if (text.includes('点餐') && /\d{3,}/.test(text)) {
+                        console.log('触发高金额验证，跳转到 /verify-premium');
+                        setTimeout(() => {
+                            window.location.href = 'A-03-verify-premium.html';
+                        }, 1000);
+                        return;
+                    }
+
+                    // 模拟WebSocket发送: WS wss://.../conversation
+                    console.log('发送消息到WebSocket:', text);
+
+                    // 模拟客服回复
+                    setTimeout(() => {
+                        this.messages.push({
+                            id: this.messageId++,
+                            sender: 'agent',
+                            text: '收到您的需求，马上为您安排',
+                            time: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+                        });
+                        this.scrollToBottom();
+                    }, 1500);
+
+                    this.scrollToBottom();
+                },
+
+                scrollToBottom() {
+                    this.$nextTick(() => {
+                        const container = document.getElementById('messageContainer');
+                        container.scrollTop = container.scrollHeight;
+                    });
+                },
+
+                endChat() {
+                    if (confirm('确定要结束对话吗？')) {
+                        console.log('结束对话，跳转到 /expired');
+                        localStorage.removeItem('guest_sid');
+                        window.location.href = 'A-04-expired.html';
+                    }
+                }
+            };
+        }
+    </script>
+</body>
+</html> 
