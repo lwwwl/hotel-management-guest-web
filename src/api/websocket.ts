@@ -11,7 +11,7 @@ export interface WebSocketConnectionResponse {
 }
 
 // WebSocket API配置
-const WEBSOCKET_API_BASE_URL = import.meta.env.VITE_WEBSOCKET_API_URL || 'http://localhost:7766';
+const WEBSOCKET_API_BASE_URL = import.meta.env.VITE_WEBSOCKET_API_URL || 'http://111.223.37.162:7766';
 
 // 获取客人端WebSocket连接信息
 export const getGuestWebSocketConnection = async (guestId: string): Promise<WebSocketConnectionResponse> => {

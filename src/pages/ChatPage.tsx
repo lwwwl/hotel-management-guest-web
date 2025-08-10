@@ -40,14 +40,27 @@ const ChatPage: React.FC = () => {
     switch (notification.type) {
       case 'message_created':
         console.log('处理新消息:', notification.data);
-        // 添加新消息到列表
-        addMessage(notification.data);
+        try {
+          // 解析JSON字符串为Message对象
+          const messageData = JSON.parse(notification.data);
+          // 添加新消息到列表
+          addMessage(messageData);
+        } catch (error) {
+          console.error('解析消息JSON失败:', error);
+          console.error('原始数据:', notification.data);
+        }
         break;
         
       case 'message_updated':
         console.log('处理消息更新:', notification.data);
-        // 更新现有消息
-        updateMessage(notification.data);
+        try {
+          // 解析JSON字符串为Message对象
+          const messageData = JSON.parse(notification.data);
+          // 更新现有消息
+          updateMessage(messageData);
+        } catch (error) {
+          console.error('解析消息JSON失败:', error);
+        }
         break;
         
       default:

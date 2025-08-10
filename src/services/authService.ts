@@ -10,7 +10,7 @@ export interface LoginInfo {
 
 class AuthService {
   private readonly STORAGE_KEY = 'hotel_guest_login_info';
-  private readonly DEFAULT_GUEST_ID = '1'; // 写死的默认guestId
+  private readonly DEFAULT_GUEST_ID = '5'; // 写死的默认guestId
 
   /**
    * 获取当前登录信息

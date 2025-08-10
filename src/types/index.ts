@@ -35,7 +35,7 @@ export interface Message {
 // WebSocket通知消息类型
 export interface NotificationMessage {
   type: string; // 'message_created' | 'message_updated' | 'conversation_created' | 'conversation_updated' | 'conversation_resolved'
-  data: Message | null; // 消息体，对于非消息类型可能为null
+  data: string | null; // 消息体，JSON字符串格式，对于非消息类型可能为null
   timestamp: string;
   conversationId: number;
 }

@@ -41,7 +41,7 @@ interface MessageListResponse {
 
 const headers = {
   'Content-Type': 'application/json',
-  'X-Guest-Id': '1'
+  'X-Guest-Id': '5'
 };
 
 export const chatAPI = {

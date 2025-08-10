@@ -8,7 +8,6 @@ interface MessageProps {
 
 const Message: React.FC<MessageProps> = ({ message }) => {
   const isGuest = message.message_type === 0;
-  
   return (
     <div className={isGuest ? 'flex justify-end' : 'flex justify-start'}>
       <div 

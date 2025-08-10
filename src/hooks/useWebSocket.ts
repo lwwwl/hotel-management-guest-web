@@ -7,7 +7,7 @@ export interface WebSocketState {
   isConnected: boolean;
   isConnecting: boolean;
   connectionError: string | null;
-  lastMessage: any | null;
+  lastMessage: WebSocketMessage | null;
 }
 
 // WebSocket Hook返回值
@@ -88,13 +88,31 @@ export const useWebSocket = (onMessageReceived?: (notification: NotificationMess
       // 接收消息
       ws.onmessage = (event) => {
         try {
-          const message = JSON.parse(event.data);
+          const data = event.data;
+          
+          // 检查是否是ping/pong消息（纯文本）
+          if (data === 'ping' || data === 'pong') {
+            console.log('收到心跳消息:', data);
+            if (data === 'pong') {
+              // 处理pong响应
+              handleMessage({ 
+                type: 'pong', 
+                data: null, 
+                timestamp: new Date().toISOString() 
+              });
+            }
+            return;
+          }
+          
+          // 尝试解析JSON消息
+          const message = JSON.parse(data);
           setState(prev => ({ ...prev, lastMessage: message }));
           
           // 处理不同类型的消息
           handleMessage(message);
         } catch (error) {
           console.error('解析WebSocket消息失败:', error);
+          console.log('原始消息数据:', event.data);
         }
       };
 
@@ -181,24 +199,11 @@ export const useWebSocket = (onMessageReceived?: (notification: NotificationMess
   // 处理接收到的消息
   const handleMessage = useCallback((message: WebSocketMessage) => {
     switch (message.type) {
-      case 'notification':
-        console.log('收到通知:', message.data);
-        // 处理NotificationMessage
-        if (message.data && typeof message.data === 'object') {
-          const notification = message.data as NotificationMessage;
-          console.log('解析的通知消息:', notification);
-          
-          // 只处理客人端需要的消息类型
-          if (notification.type === 'message_created' || notification.type === 'message_updated') {
-            console.log(`处理${notification.type}消息:`, notification);
-            
-            // 调用回调函数处理消息
-            if (messageCallbackRef.current) {
-              messageCallbackRef.current(notification);
-            }
-          } else {
-            console.log('忽略非消息类型的通知:', notification.type);
-          }
+      case 'message_created':
+        console.log('收到创建消息通知:', message);
+        // 调用回调函数处理消息
+        if (messageCallbackRef.current) {
+          messageCallbackRef.current(message as NotificationMessage);
         }
         break;
       case 'pong':
