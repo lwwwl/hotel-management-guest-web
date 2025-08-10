@@ -1,15 +1,18 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MOCK_MENU, MOCK } from '../constants';
-import type { MenuItem } from '../types';
+import type { MenuItem, NotificationMessage } from '../types';
 import Message from '../components/Message';
 import ChatInput from '../components/ChatInput';
 import ErrorMessage from '../components/ErrorMessage';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { useMessages } from '../hooks/useMessages';
+import { useWebSocketContext } from '../contexts/WebSocketContext';
+import { authService } from '../services/authService';
 
 const ChatPage: React.FC = () => {
   const navigate = useNavigate();
+  const { isConnected: wsConnected, connectionError: wsError, registerMessageHandler } = useWebSocketContext();
   const [inputText, setInputText] = useState('');
   const [showMenu, setShowMenu] = useState(false);
   const messageContainerRef = useRef<HTMLDivElement>(null);
@@ -20,8 +23,43 @@ const ChatPage: React.FC = () => {
     sending,
     error,
     sendMessage,
+    addMessage,
+    updateMessage,
     clearError
   } = useMessages();
+
+  // 处理WebSocket消息
+  const handleWebSocketMessage = useCallback((notification: NotificationMessage) => {
+    console.log('ChatPage收到WebSocket消息:', notification);
+    
+    if (!notification.data) {
+      console.warn('通知消息缺少data字段:', notification);
+      return;
+    }
+
+    switch (notification.type) {
+      case 'message_created':
+        console.log('处理新消息:', notification.data);
+        // 添加新消息到列表
+        addMessage(notification.data);
+        break;
+        
+      case 'message_updated':
+        console.log('处理消息更新:', notification.data);
+        // 更新现有消息
+        updateMessage(notification.data);
+        break;
+        
+      default:
+        console.log('忽略未知类型的通知:', notification.type);
+    }
+  }, [addMessage, updateMessage]);
+
+  // 注册消息处理器
+  useEffect(() => {
+    const unregister = registerMessageHandler(handleWebSocketMessage);
+    return unregister;
+  }, [registerMessageHandler, handleWebSocketMessage]);
 
   const scrollToBottom = () => {
     if (messageContainerRef.current) {
@@ -68,7 +106,8 @@ const ChatPage: React.FC = () => {
   const endChat = () => {
     if (confirm('确定要结束对话吗？')) {
       console.log('结束对话，跳转到 /expired');
-      localStorage.removeItem('guest_sid');
+      // 清除认证服务的登录信息
+      authService.clearLoginInfo();
       navigate('/expired');
     }
   };
@@ -81,10 +120,15 @@ const ChatPage: React.FC = () => {
           <div className="flex items-center">
             <i className="uil uil-building mr-2 text-xl"></i>
             <div>
-              <h1 className="font-semibold">房间 {MOCK.roomNumber}</h1>
-              <p className="text-xs opacity-90">
-                <i className="uil uil-check-circle"></i> 已验证
-              </p>
+              <h1 className="font-semibold">房间 {authService.getCurrentRoomNumber() || MOCK.roomNumber}</h1>
+              <div className="flex items-center gap-2">
+                <p className="text-xs opacity-90">
+                  <i className="uil uil-check-circle"></i> 已验证
+                </p>
+                {/* WebSocket连接状态指示器 */}
+                <div className={`w-2 h-2 rounded-full ${wsConnected ? 'bg-green-400' : 'bg-red-400'}`} 
+                     title={wsConnected ? 'WebSocket已连接' : 'WebSocket未连接'} />
+              </div>
             </div>
           </div>
           <button 
@@ -99,6 +143,11 @@ const ChatPage: React.FC = () => {
         {/* 错误提示 */}
         {error && (
           <ErrorMessage message={error} onClose={clearError} />
+        )}
+        
+        {/* WebSocket连接错误提示 */}
+        {wsError && (
+          <ErrorMessage message={`WebSocket连接错误: ${wsError}`} onClose={() => {}} />
         )}
 
         {/* 消息流区域 */}

@@ -49,6 +49,15 @@ export const useMessages = () => {
     setMessages(prev => [...prev, message]);
   }, []);
 
+  // 更新消息（用于消息更新）
+  const updateMessage = useCallback((updatedMessage: Message) => {
+    setMessages(prev => 
+      prev.map(message => 
+        message.id === updatedMessage.id ? updatedMessage : message
+      )
+    );
+  }, []);
+
   // 清除错误
   const clearError = useCallback(() => {
     setError(null);
@@ -67,6 +76,7 @@ export const useMessages = () => {
     loadMessages,
     sendMessage,
     addMessage,
+    updateMessage,
     clearError
   };
 };

@@ -32,6 +32,21 @@ export interface Message {
   sender: Sender;
 }
 
+// WebSocket通知消息类型
+export interface NotificationMessage {
+  type: string; // 'message_created' | 'message_updated' | 'conversation_created' | 'conversation_updated' | 'conversation_resolved'
+  data: Message | null; // 消息体，对于非消息类型可能为null
+  timestamp: string;
+  conversationId: number;
+}
+
+// WebSocket消息类型
+export interface WebSocketMessage {
+  type: string;
+  data: any;
+  timestamp: string;
+}
+
 export interface MenuItem {
   id: string;
   label: string;

@@ -4,9 +4,12 @@ import { LANGUAGES, MOCK, getQuickServices } from '../constants';
 import type { QuickService } from '../types';
 import ServiceModal from '../components/ServiceModal';
 import QuickServices from '../components/QuickServices';
+import { useWebSocketContext } from '../contexts/WebSocketContext';
+import { authService } from '../services/authService';
 
 const VerifyPage: React.FC = () => {
   const navigate = useNavigate();
+  const { connect: connectWebSocket } = useWebSocketContext();
   const [currentLanguage, setCurrentLanguage] = useState('zh');
   const [verifyCode, setVerifyCode] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
@@ -24,13 +27,23 @@ const VerifyPage: React.FC = () => {
     setErrorMessage('');
 
     try {
-      // 模拟API调用
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // 使用认证服务进行验证
+      const isValid = await authService.mockLogin(verifyCode, MOCK.roomNumber);
       
-      if (MOCK.validCodes.includes(verifyCode)) {
-        // 成功 - 存储JWT并跳转
-        localStorage.setItem('guest_sid', 'mock_jwt_token_' + Date.now());
+      if (isValid) {
         console.log('验证成功，准备跳转到 /chat');
+        
+        // 从认证服务获取guestId，建立WebSocket连接
+        try {
+          const guestId = authService.getCurrentGuestId();
+          console.log('使用guestId建立WebSocket连接:', guestId);
+          await connectWebSocket(guestId);
+          console.log('WebSocket连接已建立');
+        } catch (error) {
+          console.error('WebSocket连接失败:', error);
+          // 即使WebSocket连接失败，也允许用户进入聊天页面
+        }
+        
         alert(texts.verifySuccess);
         navigate('/chat');
       } else {
