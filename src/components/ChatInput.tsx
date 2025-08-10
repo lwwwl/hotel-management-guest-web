@@ -9,6 +9,7 @@ interface ChatInputProps {
   showMenu: boolean;
   menuItems: MenuItem[];
   onSelectMenuItem: (item: MenuItem) => void;
+  disabled?: boolean;
 }
 
 const ChatInput: React.FC<ChatInputProps> = ({
@@ -18,10 +19,11 @@ const ChatInput: React.FC<ChatInputProps> = ({
   onToggleMenu,
   showMenu,
   menuItems,
-  onSelectMenuItem
+  onSelectMenuItem,
+  disabled = false
 }) => {
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
+    if (e.key === 'Enter' && !disabled) {
       onSendMessage();
     }
   };
@@ -53,7 +55,8 @@ const ChatInput: React.FC<ChatInputProps> = ({
           <button 
             onClick={onToggleMenu}
             data-testid="menu-toggle"
-            className="p-2 hover:bg-gray-100 rounded-lg"
+            disabled={disabled}
+            className="p-2 hover:bg-gray-100 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <i className="uil uil-apps text-xl text-gray-600"></i>
           </button>
@@ -63,16 +66,17 @@ const ChatInput: React.FC<ChatInputProps> = ({
             onChange={(e) => onInputChange(e.target.value)}
             onKeyPress={handleKeyPress}
             data-testid="message-input"
-            placeholder="输入消息..."
-            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            placeholder={disabled ? "发送中..." : "输入消息..."}
+            disabled={disabled}
+            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
           />
           <button 
             onClick={onSendMessage}
             data-testid="send-button"
-            disabled={!inputText.trim()}
+            disabled={!inputText.trim() || disabled}
             className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <i className="uil uil-message text-xl"></i>
+            <i className={`uil ${disabled ? 'uil-spinner' : 'uil-message'} text-xl ${disabled ? 'animate-spin' : ''}`}></i>
           </button>
         </div>
       </div>

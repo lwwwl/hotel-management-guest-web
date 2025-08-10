@@ -1,12 +1,13 @@
 import React from 'react';
 import type { Message as MessageType } from '../types';
+import { formatTimestamp } from '../utils/time';
 
 interface MessageProps {
   message: MessageType;
 }
 
 const Message: React.FC<MessageProps> = ({ message }) => {
-  const isGuest = message.sender === 'guest';
+  const isGuest = message.message_type === 0;
   
   return (
     <div className={isGuest ? 'flex justify-end' : 'flex justify-start'}>
@@ -17,8 +18,8 @@ const Message: React.FC<MessageProps> = ({ message }) => {
             : 'bg-gray-200 text-gray-800'
         }`}
       >
-        <p className="text-sm">{message.text}</p>
-        <p className="text-xs mt-1 opacity-70">{message.time}</p>
+        <p className="text-sm">{message.content}</p>
+        <p className="text-xs mt-1 opacity-70">{formatTimestamp(message.created_at)}</p>
       </div>
     </div>
   );
