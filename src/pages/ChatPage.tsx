@@ -9,6 +9,7 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import { useMessages } from '../hooks/useMessages';
 import { useWebSocketContext } from '../contexts/WebSocketContext';
 import { authService } from '../services/authService';
+import TranslateSwitch from '../components/TranslateSwitch';
 
 const ChatPage: React.FC = () => {
   const navigate = useNavigate();
@@ -25,7 +26,13 @@ const ChatPage: React.FC = () => {
     sendMessage,
     addMessage,
     updateMessage,
-    clearError
+    clearError,
+    // Translation props
+    translateEnabled,
+    selectedLanguage,
+    translationLoading,
+    toggleTranslate,
+    changeTranslateLanguage,
   } = useMessages();
 
   // 处理WebSocket消息
@@ -180,6 +187,16 @@ const ChatPage: React.FC = () => {
               <Message key={message.id} message={message} />
             ))
           )}
+        </div>
+
+        <div className="border-t p-2">
+            <TranslateSwitch
+                enabled={translateEnabled}
+                selectedLanguage={selectedLanguage}
+                onToggle={toggleTranslate}
+                onLanguageChange={changeTranslateLanguage}
+                disabled={translationLoading}
+            />
         </div>
 
         <ChatInput

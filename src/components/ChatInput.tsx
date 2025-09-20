@@ -76,7 +76,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
             disabled={!inputText.trim() || disabled}
             className="p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <i className={`uil ${disabled ? 'uil-spinner' : 'uil-message'} text-xl ${disabled ? 'animate-spin' : ''}`}></i>
+            <i className={`uil ${disabled ? 'uil-spinner' : 'uil-navigator'} text-xl ${disabled ? 'animate-spin' : ''}`}></i>
           </button>
         </div>
       </div>

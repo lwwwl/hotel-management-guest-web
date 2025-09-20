@@ -30,6 +30,9 @@ export interface Message {
   created_at: number; // timestamp in seconds
   conversation_id: number;
   sender: Sender;
+  translation?: string;
+  translationLoading?: boolean;
+  translationError?: boolean;
 }
 
 // WebSocket通知消息类型
@@ -81,4 +84,37 @@ export interface LanguageTexts {
   networkError: string;
   verifySuccess: string;
   serviceConfirmed: string;
+}
+
+// 翻译相关类型
+export type LanguageCode = 'zh_CN' | 'en_US' | 'ja_JP';
+
+export interface LanguageOption {
+  code: LanguageCode;
+  name: string;
+  flag: string;
+}
+
+export interface MessageContentInfo {
+  messageId: number;
+  content: string;
+}
+
+export interface TranslateRequest {
+  conversationId: number;
+  messages: MessageContentInfo[];
+  language: LanguageCode;
+}
+
+export interface TranslateResultInfo {
+  messageId: number;
+  result: string;
+}
+
+export interface TranslateResponse {
+  timestamp: number;
+  statusCode: number;
+  message: string;
+  data: TranslateResultInfo[];
+  error?: string;
 } 
