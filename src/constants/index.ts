@@ -1,11 +1,6 @@
-import type { MenuItem, QuickService, LanguageTexts } from '../types';
+import type { QuickService, LanguageTexts } from '../types';
 
-export const MOCK_MENU: MenuItem[] = [
-  { id: 'towel', label: '需要毛巾', icon: 'uil uil-droplet', template: '请送2条浴巾到1208房间' },
-  { id: 'clean', label: '房间清洁', icon: 'uil uil-brush-alt', template: '请安排清洁1208房间' },
-  { id: 'food', label: '餐饮服务', icon: 'uil uil-restaurant', template: '我想点餐' },
-  { id: 'other', label: '其他服务', icon: 'uil uil-ellipsis-h', template: '需要其他帮助' }
-];
+export const API_BASE_URL = 'http://111.223.37.162:7788';
 
 export const MOCK_MESSAGES = [
   { id: 1, sender: 'agent' as const, text: '您好！有什么可以帮助您的吗？', time: '10:00' },

@@ -6,11 +6,13 @@ import ServiceModal from '../components/ServiceModal';
 import QuickServices from '../components/QuickServices';
 import { useWebSocketContext } from '../contexts/WebSocketContext';
 import { authService } from '../services/authService';
+import { useLanguage } from '../contexts/LanguageContext';
+import type { SupportedLanguage } from '../contexts/LanguageContext';
 
 const VerifyPage: React.FC = () => {
   const navigate = useNavigate();
   const { connect: connectWebSocket } = useWebSocketContext();
-  const [currentLanguage, setCurrentLanguage] = useState('zh');
+  const { language, setLanguage } = useLanguage();
   const [verifyCode, setVerifyCode] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [loading, setLoading] = useState(false);
@@ -18,8 +20,8 @@ const VerifyPage: React.FC = () => {
   const [selectedService, setSelectedService] = useState<QuickService | null>(null);
   const [serviceNote, setServiceNote] = useState('');
 
-  const texts = LANGUAGES[currentLanguage] || LANGUAGES.zh;
-  const quickServices = getQuickServices(currentLanguage);
+  const texts = LANGUAGES[language] || LANGUAGES.zh;
+  const quickServices = getQuickServices(language);
 
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,7 +46,6 @@ const VerifyPage: React.FC = () => {
           // 即使WebSocket连接失败，也允许用户进入聊天页面
         }
         
-        alert(texts.verifySuccess);
         navigate('/chat');
       } else {
         // 失败 - 显示错误
@@ -71,7 +72,7 @@ const VerifyPage: React.FC = () => {
       service: selectedService.name,
       room: MOCK.roomNumber,
       note: serviceNote,
-      language: currentLanguage
+      language: language
     });
     
     // 模拟API调用
@@ -89,15 +90,14 @@ const VerifyPage: React.FC = () => {
         {/* 语言选择 */}
         <div className="flex justify-end mb-4">
           <select 
-            value={currentLanguage} 
-            onChange={(e) => setCurrentLanguage(e.target.value)}
+            value={language} 
+            onChange={(e) => setLanguage(e.target.value as SupportedLanguage)}
             className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             data-testid="language-select"
           >
             <option value="zh">中文</option>
             <option value="en">English</option>
             <option value="ja">日本語</option>
-            <option value="ko">한국어</option>
           </select>
         </div>
 

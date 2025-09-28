@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MOCK_MENU, MOCK } from '../constants';
-import type { MenuItem, NotificationMessage } from '../types';
+import type { NotificationMessage, QuickMenuItem } from '../types';
 import Message from '../components/Message';
 import ChatInput from '../components/ChatInput';
 import ErrorMessage from '../components/ErrorMessage';
@@ -9,31 +8,119 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import { useMessages } from '../hooks/useMessages';
 import { useWebSocketContext } from '../contexts/WebSocketContext';
 import { authService } from '../services/authService';
-import TranslateSwitch from '../components/TranslateSwitch';
+import { useLanguage } from '../contexts/LanguageContext';
+import { getQuickMenuList } from '../services/quickMenuService';
+import QuickMenuPanel from '../components/QuickMenuPanel';
+import LanguageSelector from '../components/LanguageSelector';
+
 
 const ChatPage: React.FC = () => {
   const navigate = useNavigate();
   const { isConnected: wsConnected, connectionError: wsError, registerMessageHandler } = useWebSocketContext();
+  const { language } = useLanguage();
   const [inputText, setInputText] = useState('');
-  const [showMenu, setShowMenu] = useState(false);
+  const [showQuickMenu, setShowQuickMenu] = useState(false);
+  const [quickMenuItems, setQuickMenuItems] = useState<QuickMenuItem[]>([]);
   const messageContainerRef = useRef<HTMLDivElement>(null);
+  const quickMenuContainerRef = useRef<HTMLDivElement>(null);
+  const [prevScrollHeight, setPrevScrollHeight] = useState<number | null>(null);
   
   const {
     messages,
     loading,
+    loadingMore,
+    hasMore,
     sending,
     error,
     sendMessage,
     addMessage,
     updateMessage,
     clearError,
+    loadMoreMessages,
     // Translation props
     translateEnabled,
-    selectedLanguage,
     translationLoading,
     toggleTranslate,
-    changeTranslateLanguage,
-  } = useMessages();
+  } = useMessages(language);
+
+  // 初次加载和新消息时滚动到底部
+  useEffect(() => {
+    if (loading) return; // 初始加载时等待数据
+    const container = messageContainerRef.current;
+    if (container) {
+        // Simple heuristic: if we are near the bottom, scroll to the bottom.
+        // This allows the user to scroll up and not be forced down.
+        const isNearBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 200;
+        if (isNearBottom) {
+            container.scrollTop = container.scrollHeight;
+        }
+    }
+  }, [messages, loading]);
+
+  // 分页加载时保持滚动位置
+  useEffect(() => {
+    if (!loadingMore && prevScrollHeight !== null && messageContainerRef.current) {
+      const currentScrollHeight = messageContainerRef.current.scrollHeight;
+      messageContainerRef.current.scrollTop = currentScrollHeight - prevScrollHeight;
+      setPrevScrollHeight(null);
+    }
+  }, [loadingMore, prevScrollHeight]);
+
+  const handleScroll = useCallback(() => {
+    if (messageContainerRef.current && messageContainerRef.current.scrollTop < 100) {
+      if (hasMore && !loadingMore && !loading) {
+        if (messageContainerRef.current) {
+          setPrevScrollHeight(messageContainerRef.current.scrollHeight);
+        }
+        loadMoreMessages();
+      }
+    }
+  }, [hasMore, loadingMore, loading, loadMoreMessages]);
+
+  useEffect(() => {
+    const container = messageContainerRef.current;
+    if (container) {
+      container.addEventListener('scroll', handleScroll);
+    }
+    return () => {
+      if (container) {
+        container.removeEventListener('scroll', handleScroll);
+      }
+    };
+  }, [handleScroll]);
+
+  // 点击工具栏外部时，关闭工具栏
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (quickMenuContainerRef.current && !quickMenuContainerRef.current.contains(event.target as Node)) {
+        setShowQuickMenu(false);
+      }
+    };
+
+    if (showQuickMenu) {
+      // 监听mousedown而不是click，可以更早地捕捉到事件
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showQuickMenu]);
+
+  useEffect(() => {
+    // 获取快捷菜单数据
+    const fetchQuickMenu = async () => {
+      try {
+        const items = await getQuickMenuList();
+        setQuickMenuItems(items);
+      } catch (error) {
+        console.error("Failed to fetch quick menu items:", error);
+        // 可以在这里设置一个错误状态来通知用户
+      }
+    };
+
+    fetchQuickMenu();
+  }, []);
 
   // 处理WebSocket消息
   const handleWebSocketMessage = useCallback((notification: NotificationMessage) => {
@@ -81,29 +168,11 @@ const ChatPage: React.FC = () => {
     return unregister;
   }, [registerMessageHandler, handleWebSocketMessage]);
 
-  const scrollToBottom = () => {
-    if (messageContainerRef.current) {
-      messageContainerRef.current.scrollTop = messageContainerRef.current.scrollHeight;
-    }
-  };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  const toggleMenu = () => {
-    setShowMenu(!showMenu);
-  };
-
-  const selectMenuItem = (item: MenuItem) => {
-    setInputText(item.template);
-    setShowMenu(false);
-  };
-
   const handleSendMessage = async () => {
     if (!inputText.trim() || sending) return;
 
     const content = inputText.trim();
+    setShowQuickMenu(false); // 发送消息时关闭快捷菜单
     
     try {
       await sendMessage(content);
@@ -140,7 +209,7 @@ const ChatPage: React.FC = () => {
           <div className="flex items-center">
             <i className="uil uil-building mr-2 text-xl"></i>
             <div>
-              <h1 className="font-semibold">房间 {authService.getCurrentRoomNumber() || MOCK.roomNumber}</h1>
+              <h1 className="font-semibold">房间 {authService.getCurrentRoomNumber() || 'N/A'}</h1>
               <div className="flex items-center gap-2">
                 <p className="text-xs opacity-90">
                   <i className="uil uil-check-circle"></i> 已验证
@@ -151,13 +220,12 @@ const ChatPage: React.FC = () => {
               </div>
             </div>
           </div>
-          <button 
-            onClick={endChat}
-            data-testid="end-chat"
-            className="text-white hover:bg-blue-700 p-2 rounded"
-          >
-            <i className="uil uil-times text-xl"></i>
-          </button>
+          <div className="flex items-center gap-4">
+            <LanguageSelector />
+            <button onClick={endChat} className="text-white hover:text-gray-200 transition-colors" title="结束对话">
+              <i className="uil uil-sign-out-alt text-2xl"></i>
+            </button>
+          </div>
         </header>
 
         {/* 错误提示 */}
@@ -178,37 +246,48 @@ const ChatPage: React.FC = () => {
         >
           {loading ? (
             <LoadingSpinner text="加载消息中..." />
-          ) : messages.length === 0 ? (
-            <div className="flex justify-center items-center h-20">
-              <div className="text-gray-500">暂无消息</div>
-            </div>
           ) : (
-            messages.map((message) => (
-              <Message key={message.id} message={message} />
-            ))
+            <>
+              {hasMore && (
+                <div className="text-center py-2 text-gray-500 text-sm">
+                  {loadingMore ? '加载中...' : '上拉加载更多'}
+                </div>
+              )}
+              {messages.length === 0 && !loading && (
+                <div className="flex justify-center items-center h-20">
+                  <div className="text-gray-500">暂无消息</div>
+                </div>
+              )}
+              {messages.map((message) => (
+                  <Message key={message.id} message={message} />
+              ))}
+            </>
           )}
         </div>
 
-        <div className="border-t p-2">
-            <TranslateSwitch
-                enabled={translateEnabled}
-                selectedLanguage={selectedLanguage}
-                onToggle={toggleTranslate}
-                onLanguageChange={changeTranslateLanguage}
-                disabled={translationLoading}
-            />
+        <div className="relative" ref={quickMenuContainerRef}>
+          {showQuickMenu && (
+              <QuickMenuPanel
+                  items={quickMenuItems}
+                  language={language}
+                  onSelectItem={(message) => {
+                      setInputText(message);
+                      setShowQuickMenu(false);
+                  }}
+                  onClose={() => setShowQuickMenu(false)}
+                  translateEnabled={translateEnabled}
+                  onToggleTranslate={toggleTranslate}
+                  translationLoading={translationLoading}
+              />
+          )}
+          <ChatInput
+            inputText={inputText}
+            onInputChange={setInputText}
+            onSendMessage={handleSendMessage}
+            onToggleQuickMenu={() => setShowQuickMenu(!showQuickMenu)}
+            disabled={sending}
+          />
         </div>
-
-        <ChatInput
-          inputText={inputText}
-          onInputChange={setInputText}
-          onSendMessage={handleSendMessage}
-          onToggleMenu={toggleMenu}
-          showMenu={showMenu}
-          menuItems={MOCK_MENU}
-          onSelectMenuItem={selectMenuItem}
-          disabled={sending}
-        />
       </div>
     </div>
   );

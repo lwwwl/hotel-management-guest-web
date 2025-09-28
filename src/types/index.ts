@@ -117,4 +117,27 @@ export interface TranslateResponse {
   message: string;
   data: TranslateResultInfo[];
   error?: string;
+}
+
+export interface QuickMenuItem {
+  id: number;
+  icon: string;
+  content: string; // JSON string
+  sortOrder: number;
+  createTime: string;
+  updateTime: string;
+}
+
+// 解析后的快捷菜单内容
+export interface ParsedQuickMenuContent {
+  name: {
+    zh: string;
+    en: string;
+    ja: string;
+  };
+  message: {
+    zh: string;
+    en: string;
+    ja: string;
+  };
 } 
