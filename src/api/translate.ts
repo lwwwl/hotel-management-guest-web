@@ -1,6 +1,7 @@
 import type { TranslateRequest, TranslateResponse } from '../types';
 
-const BASE_URL = 'http://111.223.37.162:7788'; // Assuming the same base URL
+// const BASE_URL = 'http://111.223.37.162:7788'; // Assuming the same base URL
+const BASE_URL = 'https://kefu.5ok.co/api/v1';
 
 const headers = {
   'Content-Type': 'application/json',

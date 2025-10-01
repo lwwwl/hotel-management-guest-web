@@ -12,7 +12,7 @@ function App() {
   return (
     <LanguageProvider>
       <WebSocketProvider>
-        <Router>
+        <Router basename="/guest">
           <div className="App">
             <Routes>
               <Route path="/" element={<VerifyPage />} />

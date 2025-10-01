@@ -1,6 +1,7 @@
 import type { QuickService, LanguageTexts } from '../types';
 
-export const API_BASE_URL = 'http://111.223.37.162:7788';
+// export const API_BASE_URL = 'http://111.223.37.162:7788';
+export const API_BASE_URL = 'https://kefu.5ok.co/api/v1';
 
 export const MOCK_MESSAGES = [
   { id: 1, sender: 'agent' as const, text: '您好！有什么可以帮助您的吗？', time: '10:00' },

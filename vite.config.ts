@@ -8,4 +8,5 @@ export default defineConfig({
     port: 9010,
     host: '0.0.0.0'
   },
+  base: '/guest/',
 })

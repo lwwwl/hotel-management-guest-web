@@ -2,6 +2,7 @@
   "name": "hotel-management-guest-web",
   "private": true,
   "version": "0.0.0",
+  "homepage": "/guest/",
   "type": "module",
   "scripts": {
     "dev": "vite",
