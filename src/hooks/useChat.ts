@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { MOCK_MESSAGES } from '../constants';
+import { MOCK_MESSAGES, getQuickServices } from '../constants/index';
 import type { Message } from '../types';
 
 export const useChat = () => {
@@ -40,9 +40,6 @@ export const useChat = () => {
     setMessages(prev => [...prev, newMessage]);
     setInputText('');
     setMessageId(prev => prev + 1);
-
-    // 模拟WebSocket发送
-    console.log('发送消息到WebSocket:', text);
 
     // 模拟客服回复
     setTimeout(() => {

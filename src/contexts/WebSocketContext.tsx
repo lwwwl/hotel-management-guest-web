@@ -1,8 +1,9 @@
-import React, { createContext, useContext, useRef, useCallback } from 'react';
+import React, { createContext, useContext, useRef, useCallback, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { useWebSocket } from '../hooks/useWebSocket';
 import type { UseWebSocketReturn } from '../hooks/useWebSocket';
 import type { NotificationMessage } from '../types';
+import { authService } from '../services/authService';
 
 interface WebSocketContextType extends UseWebSocketReturn {
   registerMessageHandler: (handler: (notification: NotificationMessage) => void) => () => void;
@@ -42,6 +43,17 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
   }, []);
 
   const webSocketHook = useWebSocket(handleWebSocketMessage);
+
+  // 在Provider加载时检查是否需要自动重连
+  useEffect(() => {
+    if (authService.isLoggedIn() && !webSocketHook.isConnected && !webSocketHook.isConnecting) {
+      const contactId = authService.getCurrentChatwootContactId();
+      if (contactId) {
+        console.log('[WebSocketProvider] 用户已登录，尝试自动重连...');
+        webSocketHook.connect(contactId);
+      }
+    }
+  }, [webSocketHook.isConnected, webSocketHook.isConnecting, webSocketHook.connect]);
   
   return (
     <WebSocketContext.Provider value={{ 

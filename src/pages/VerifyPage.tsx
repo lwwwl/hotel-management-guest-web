@@ -1,92 +1,79 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { LANGUAGES, MOCK, getQuickServices } from '../constants';
-import type { QuickService } from '../types';
-import ServiceModal from '../components/ServiceModal';
-import QuickServices from '../components/QuickServices';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { MOCK } from '../constants/index';
 import { useWebSocketContext } from '../contexts/WebSocketContext';
 import { authService } from '../services/authService';
 import { useLanguage } from '../contexts/LanguageContext';
 import type { SupportedLanguage } from '../contexts/LanguageContext';
+import { useTranslations } from '../contexts/useTranslations';
 
 const VerifyPage: React.FC = () => {
   const navigate = useNavigate();
   const { connect: connectWebSocket } = useWebSocketContext();
   const { language, setLanguage } = useLanguage();
-  const [verifyCode, setVerifyCode] = useState('');
+  const [searchParams] = useSearchParams();
+  const texts = useTranslations();
+
+  const [roomName, setRoomName] = useState<string | null>(null);
+  const [roomId, setRoomId] = useState<string | null>(null);
+  
+  const [guestName, setGuestName] = useState('');
+  const [phoneSuffix, setPhoneSuffix] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [loading, setLoading] = useState(false);
-  const [showServiceModal, setShowServiceModal] = useState(false);
-  const [selectedService, setSelectedService] = useState<QuickService | null>(null);
-  const [serviceNote, setServiceNote] = useState('');
 
-  const texts = LANGUAGES[language] || LANGUAGES.zh;
-  const quickServices = getQuickServices(language);
+  useEffect(() => {
+    setRoomName(searchParams.get('name'));
+    setRoomId(searchParams.get('id'));
+  }, [searchParams]);
 
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setErrorMessage('');
 
+    if (!guestName || !phoneSuffix) {
+      setErrorMessage(texts.verifyInvalidInput);
+      setLoading(false);
+      return;
+    }
+
     try {
-      // 使用认证服务进行验证
-      const isValid = await authService.mockLogin(verifyCode, MOCK.roomNumber);
-      
-      if (isValid) {
+      const response = await authService.login(guestName, phoneSuffix, roomName || MOCK.roomNumber);
+
+      if (response && response.id && response.chatwootConversationId) {
         console.log('验证成功，准备跳转到 /chat');
         
-        // 从认证服务获取guestId，建立WebSocket连接
         try {
-          const guestId = authService.getCurrentGuestId();
-          console.log('使用guestId建立WebSocket连接:', guestId);
-          await connectWebSocket(guestId);
-          console.log('WebSocket连接已建立');
+          const contactId = authService.getCurrentChatwootContactId();
+          if (contactId) {
+            console.log('使用contactId建立WebSocket连接:', contactId);
+            await connectWebSocket(contactId);
+            console.log('WebSocket连接已建立');
+          } else {
+            console.error('无法获取contactId，WebSocket连接失败');
+          }
         } catch (error) {
           console.error('WebSocket连接失败:', error);
-          // 即使WebSocket连接失败，也允许用户进入聊天页面
         }
         
-        navigate('/chat');
+        navigate(`/chat?conversationId=${response.chatwootConversationId}`);
       } else {
         // 失败 - 显示错误
-        setErrorMessage(texts.verifyFailed);
-        setVerifyCode('');
+        setErrorMessage(texts.verifyFailed_Verify);
+        setGuestName('');
+        setPhoneSuffix('');
       }
     } catch (error) {
-      setErrorMessage(texts.networkError);
+      setErrorMessage(texts.networkError_Verify);
     } finally {
       setLoading(false);
     }
   };
 
-  const requestService = (service: QuickService) => {
-    setSelectedService(service);
-    setShowServiceModal(true);
-    console.log('请求服务:', service.name);
-  };
-
-  const confirmService = () => {
-    if (!selectedService) return;
-    
-    console.log('确认服务请求:', {
-      service: selectedService.name,
-      room: MOCK.roomNumber,
-      note: serviceNote,
-      language: language
-    });
-    
-    // 模拟API调用
-    setTimeout(() => {
-      alert(texts.serviceConfirmed);
-      setShowServiceModal(false);
-      setSelectedService(null);
-      setServiceNote('');
-    }, 500);
-  };
-
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 bg-gray-50">
-      <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="bg-white rounded-lg shadow-lg p-8 w-full">
         {/* 语言选择 */}
         <div className="flex justify-end mb-4">
           <select 
@@ -106,24 +93,40 @@ const VerifyPage: React.FC = () => {
           <div className="w-20 h-20 bg-blue-600 rounded-full mx-auto mb-4 flex items-center justify-center">
             <i className="uil uil-building text-white text-3xl"></i>
           </div>
-          <h1 className="text-2xl font-bold text-gray-800">{texts.welcome}</h1>
-          <p className="text-gray-600 mt-2">{texts.roomNumber}{MOCK.roomNumber}</p>
+          <h1 className="text-2xl font-bold text-gray-800">{texts.welcome_Verify}</h1>
+          <p className="text-gray-600 mt-2">{texts.roomNumber}{roomName || MOCK.roomNumber}</p>
         </div>
 
         {/* 验证表单 */}
-        <form onSubmit={handleVerify} className="space-y-6">
+        <form onSubmit={handleVerify} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              {texts.verifyLabel}
+              {texts.guestNameLabel}
             </label>
             <input 
               type="text" 
-              value={verifyCode}
-              onChange={(e) => setVerifyCode(e.target.value)}
-              data-testid="verify-input"
+              value={guestName}
+              onChange={(e) => setGuestName(e.target.value)}
+              data-testid="guest-name-input"
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder={texts.verifyPlaceholder}
+              placeholder={texts.guestNamePlaceholder}
               required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {texts.phoneSuffixLabel}
+            </label>
+            <input 
+              type="text" 
+              value={phoneSuffix}
+              onChange={(e) => setPhoneSuffix(e.target.value)}
+              data-testid="phone-suffix-input"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              placeholder={texts.phoneSuffixPlaceholder}
+              required
+              maxLength={4}
             />
           </div>
 
@@ -147,39 +150,17 @@ const VerifyPage: React.FC = () => {
                 <span>{texts.verifying}</span>
               </span>
             ) : (
-              <span>{texts.verifyButton}</span>
+              <span>{texts.verifyButton_Verify}</span>
             )}
           </button>
         </form>
 
-        {/* 快捷服务菜单 */}
-        <div className="mt-8 border-t pt-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">{texts.quickServices}</h3>
-          <QuickServices services={quickServices} onServiceClick={requestService} />
-          <p className="text-xs text-gray-500 mt-3 text-center">{texts.serviceNote}</p>
-        </div>
-
         {/* 帮助信息 */}
         <div className="mt-6 text-center">
-          <p className="text-sm text-gray-500">{texts.helpText}</p>
+          <p className="text-sm text-gray-500">{texts.helpText_Verify}</p>
           <a href="tel:021-12345678" className="text-blue-600 hover:underline">021-12345678</a>
         </div>
       </div>
-
-      {/* 服务请求模态框 */}
-      <ServiceModal
-        isOpen={showServiceModal}
-        selectedService={selectedService}
-        serviceNote={serviceNote}
-        onServiceNoteChange={setServiceNote}
-        onConfirm={confirmService}
-        onCancel={() => {
-          setShowServiceModal(false);
-          setSelectedService(null);
-          setServiceNote('');
-        }}
-        texts={texts}
-      />
     </div>
   );
 };

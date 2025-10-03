@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import { MOCK, LANGUAGES, getQuickServices } from '../constants';
+import { useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { LANGUAGES, MOCK } from '../constants/index';
 import type { QuickService } from '../types';
 
 export const useVerify = () => {
@@ -12,7 +13,6 @@ export const useVerify = () => {
   const [serviceNote, setServiceNote] = useState('');
 
   const texts = LANGUAGES[currentLanguage] || LANGUAGES.zh;
-  const quickServices = getQuickServices(currentLanguage);
 
   const handleVerify = async () => {
     setLoading(true);
@@ -79,7 +79,6 @@ export const useVerify = () => {
     serviceNote,
     setServiceNote,
     texts,
-    quickServices,
     handleVerify,
     requestService,
     confirmService,

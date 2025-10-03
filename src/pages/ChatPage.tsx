@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import type { NotificationMessage, QuickMenuItem } from '../types';
 import Message from '../components/Message';
 import ChatInput from '../components/ChatInput';
@@ -9,21 +9,29 @@ import { useMessages } from '../hooks/useMessages';
 import { useWebSocketContext } from '../contexts/WebSocketContext';
 import { authService } from '../services/authService';
 import { useLanguage } from '../contexts/LanguageContext';
-import { getQuickMenuList } from '../services/quickMenuService';
+import { quickMenuAPI } from '../api/quickMenu';
 import QuickMenuPanel from '../components/QuickMenuPanel';
 import LanguageSelector from '../components/LanguageSelector';
+import TranslateButton from '../components/TranslateButton';
+import { useTranslations } from '../contexts/useTranslations';
 
 
 const ChatPage: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { isConnected: wsConnected, connectionError: wsError, registerMessageHandler } = useWebSocketContext();
   const { language } = useLanguage();
+  const texts = useTranslations();
   const [inputText, setInputText] = useState('');
   const [showQuickMenu, setShowQuickMenu] = useState(false);
   const [quickMenuItems, setQuickMenuItems] = useState<QuickMenuItem[]>([]);
   const messageContainerRef = useRef<HTMLDivElement>(null);
   const quickMenuContainerRef = useRef<HTMLDivElement>(null);
   const [prevScrollHeight, setPrevScrollHeight] = useState<number | null>(null);
+  
+  const conversationId = searchParams.get('conversationId') 
+    ? Number(searchParams.get('conversationId')) 
+    : null;
   
   const {
     messages,
@@ -41,7 +49,9 @@ const ChatPage: React.FC = () => {
     translateEnabled,
     translationLoading,
     toggleTranslate,
-  } = useMessages(language);
+    translationError,
+    clearTranslationError,
+  } = useMessages(language, conversationId);
 
   // 初次加载和新消息时滚动到底部
   useEffect(() => {
@@ -111,7 +121,7 @@ const ChatPage: React.FC = () => {
     // 获取快捷菜单数据
     const fetchQuickMenu = async () => {
       try {
-        const items = await getQuickMenuList();
+        const items = await quickMenuAPI.getQuickMenuList();
         setQuickMenuItems(items);
       } catch (error) {
         console.error("Failed to fetch quick menu items:", error);
@@ -193,36 +203,41 @@ const ChatPage: React.FC = () => {
   };
 
   const endChat = () => {
-    if (confirm('确定要结束对话吗？')) {
+    if (confirm(texts.confirmEndChat)) {
       console.log('结束对话，跳转到 /expired');
       // 清除认证服务的登录信息
-      authService.clearLoginInfo();
+      authService.logout();
       navigate('/expired');
     }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 bg-gray-50">
-      <div className="bg-white rounded-lg shadow-lg w-full max-w-md flex flex-col h-[92vh]">
+      <div className="bg-white rounded-lg shadow-lg w-full flex flex-col h-screen">
         {/* Header */}
         <header className="bg-blue-600 text-white p-4 flex items-center justify-between rounded-t-lg">
           <div className="flex items-center">
             <i className="uil uil-building mr-2 text-xl"></i>
             <div>
-              <h1 className="font-semibold">房间 {authService.getCurrentRoomNumber() || 'N/A'}</h1>
+              <h1 className="font-semibold">{texts.roomNumber}{authService.getRoomName() || 'N/A'}</h1>
               <div className="flex items-center gap-2">
                 <p className="text-xs opacity-90">
-                  <i className="uil uil-check-circle"></i> 已验证
+                  <i className="uil uil-check-circle"></i> {texts.verified}
                 </p>
                 {/* WebSocket连接状态指示器 */}
                 <div className={`w-2 h-2 rounded-full ${wsConnected ? 'bg-green-400' : 'bg-red-400'}`} 
-                     title={wsConnected ? 'WebSocket已连接' : 'WebSocket未连接'} />
+                     title={wsConnected ? texts.webSocketConnected : texts.webSocketDisconnected} />
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <TranslateButton
+              onClick={toggleTranslate}
+              isTranslating={translateEnabled}
+              isLoading={translationLoading}
+            />
             <LanguageSelector />
-            <button onClick={endChat} className="text-white hover:text-gray-200 transition-colors" title="结束对话">
+            <button onClick={endChat} className="text-white hover:text-gray-200 transition-colors" title={texts.endChat}>
               <i className="uil uil-sign-out-alt text-2xl"></i>
             </button>
           </div>
@@ -237,6 +252,11 @@ const ChatPage: React.FC = () => {
         {wsError && (
           <ErrorMessage message={`WebSocket连接错误: ${wsError}`} onClose={() => {}} />
         )}
+        
+        {/* 翻译错误提示 */}
+        {translationError && (
+          <ErrorMessage message={translationError} onClose={clearTranslationError} />
+        )}
 
         {/* 消息流区域 */}
         <div 
@@ -245,17 +265,17 @@ const ChatPage: React.FC = () => {
           id="messageContainer"
         >
           {loading ? (
-            <LoadingSpinner text="加载消息中..." />
+            <LoadingSpinner text={texts.loadingMessages} />
           ) : (
             <>
               {hasMore && (
                 <div className="text-center py-2 text-gray-500 text-sm">
-                  {loadingMore ? '加载中...' : '上拉加载更多'}
+                  {loadingMore ? texts.loadingMore : texts.pullToLoadMore}
                 </div>
               )}
               {messages.length === 0 && !loading && (
                 <div className="flex justify-center items-center h-20">
-                  <div className="text-gray-500">暂无消息</div>
+                  <div className="text-gray-500">{texts.noMessages}</div>
                 </div>
               )}
               {messages.map((message) => (

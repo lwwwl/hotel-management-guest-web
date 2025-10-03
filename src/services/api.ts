@@ -1,22 +1,21 @@
 import axios from 'axios';
-import { authService } from './authService';
-import { API_BASE_URL } from '../constants';
+import Cookies from 'js-cookie';
+import {API_BASE_URL} from "../constants";
 
-const apiClient = axios.create({
+const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// 请求拦截器，用于动态添加认证信息
-apiClient.interceptors.request.use(
+// 请求拦截器
+api.interceptors.request.use(
   (config) => {
-    const guestId = authService.getCurrentGuestId() || '5'; // 使用'5'作为默认值
-    
-    // 为新接口添加X-Guest-Id
-    config.headers['X-Guest-Id'] = guestId;
-
+    const guestId = Cookies.get('guestId');
+    if (guestId) {
+      config.headers['X-Guest-Id'] = guestId;
+    }
     return config;
   },
   (error) => {
@@ -24,4 +23,4 @@ apiClient.interceptors.request.use(
   }
 );
 
-export default apiClient;
+export default api;

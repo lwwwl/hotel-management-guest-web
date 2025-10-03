@@ -14,10 +14,10 @@ export interface WebSocketConnectionResponse {
 const WEBSOCKET_API_BASE_URL = 'https://kefu.5ok.co';
 
 // 获取客人端WebSocket连接信息
-export const getGuestWebSocketConnection = async (guestId: string): Promise<WebSocketConnectionResponse> => {
+export const getGuestWebSocketConnection = async (contactId: string): Promise<WebSocketConnectionResponse> => {
   try {
     const response = await axios.post(`${WEBSOCKET_API_BASE_URL}/api/websocket/connect/guest`, 
-      `guestId=${guestId}`,
+      `contactId=${contactId}`,
       {
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
@@ -31,24 +31,24 @@ export const getGuestWebSocketConnection = async (guestId: string): Promise<WebS
   }
 };
 
-// 检查客人在线状态
-export const checkGuestStatus = async (guestId: string) => {
-  try {
-    const response = await axios.get(`${WEBSOCKET_API_BASE_URL}/api/websocket/status/${guestId}`);
-    return response.data;
-  } catch (error) {
-    console.error('检查在线状态失败:', error);
-    throw new Error('检查在线状态失败');
-  }
-};
-
-// 获取在线统计
-export const getOnlineStats = async () => {
-  try {
-    const response = await axios.get(`${WEBSOCKET_API_BASE_URL}/api/websocket/stats`);
-    return response.data;
-  } catch (error) {
-    console.error('获取在线统计失败:', error);
-    throw new Error('获取在线统计失败');
-  }
-};
+// // 检查客人在线状态
+// export const checkGuestStatus = async (guestId: string) => {
+//   try {
+//     const response = await axios.get(`${WEBSOCKET_API_BASE_URL}/api/websocket/status/${guestId}`);
+//     return response.data;
+//   } catch (error) {
+//     console.error('检查在线状态失败:', error);
+//     throw new Error('检查在线状态失败');
+//   }
+// };
+//
+// // 获取在线统计
+// export const getOnlineStats = async () => {
+//   try {
+//     const response = await axios.get(`${WEBSOCKET_API_BASE_URL}/api/websocket/stats`);
+//     return response.data;
+//   } catch (error) {
+//     console.error('获取在线统计失败:', error);
+//     throw new Error('获取在线统计失败');
+//   }
+// };

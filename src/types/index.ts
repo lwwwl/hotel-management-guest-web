@@ -84,6 +84,28 @@ export interface LanguageTexts {
   networkError: string;
   verifySuccess: string;
   serviceConfirmed: string;
+  serviceRequestLabel: string;
+  serviceRequestPlaceholder: string;
+  serviceConfirmed_Verify: string;
+  // ChatPage
+  verified: string;
+  webSocketConnected: string;
+  webSocketDisconnected: string;
+  endChat: string;
+  confirmEndChat: string;
+  loadingMessages: string;
+  loadingMore: string;
+  pullToLoadMore: string;
+  noMessages: string;
+  // Components
+  sending: string;
+  typeMessage: string;
+  quickMenu: string;
+  enableAutoTranslate: string;
+  disableAutoTranslate: string;
+  // ExpiredPage
+  sessionExpiredTitle: string;
+  sessionExpiredMessage: string;
 }
 
 // 翻译相关类型

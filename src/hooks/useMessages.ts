@@ -11,7 +11,7 @@ const languageMap: Record<SupportedLanguage, LanguageCode> = {
   ja: 'ja_JP',
 };
 
-export const useMessages = (language: SupportedLanguage) => {
+export const useMessages = (language: SupportedLanguage, conversationId: number | null) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true); // Renamed for clarity, true on initial mount
   const [loadingMore, setLoadingMore] = useState(false);
@@ -19,9 +19,11 @@ export const useMessages = (language: SupportedLanguage) => {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Translation States
+  // Translation state
   const [translateEnabled, setTranslateEnabled] = useState(false);
   const [translationLoading, setTranslationLoading] = useState(false);
+  const [translationError, setTranslationError] = useState<string | null>(null);
+
   const currentLangCode = languageMap[language];
 
   // --- Translation Logic ---
@@ -59,8 +61,12 @@ export const useMessages = (language: SupportedLanguage) => {
   }, []);
 
   // --- Original Logic Modified for Translation ---
-  const loadMessages = useCallback(async (...args: [number] | []) => {
-    const before = args[0];
+  const loadMessages = useCallback(async (before?: number) => {
+    if (!conversationId) {
+      setLoading(false);
+      return;
+    }
+    
     if (!before) {
       setLoading(true);
     } else {
@@ -68,7 +74,7 @@ export const useMessages = (language: SupportedLanguage) => {
     }
     setError(null);
     try {
-      const response = await chatAPI.getMessageList({ before });
+      const response = await chatAPI.getMessageList({ before, conversationId });
       
       if (response.messages.length === 0) {
         setHasMore(false);
@@ -87,7 +93,7 @@ export const useMessages = (language: SupportedLanguage) => {
         setLoadingMore(false);
       }
     }
-  }, []);
+  }, [conversationId]);
 
   const loadMoreMessages = useCallback(() => {
     if (loading || loadingMore || !hasMore) return;
@@ -98,13 +104,13 @@ export const useMessages = (language: SupportedLanguage) => {
   }, [loading, loadingMore, hasMore, messages, loadMessages]);
 
   const sendMessage = useCallback(async (content: string) => {
-    if (!content.trim() || sending) return;
+    if (!content.trim() || sending || !conversationId) return;
 
     try {
       setSending(true);
       setError(null);
       
-      const response = await chatAPI.createMessage(content.trim());
+      const response = await chatAPI.createMessage(content.trim(), conversationId);
       setMessages(prev => [...prev, response]);
       
       if (translateEnabled) {
@@ -119,7 +125,7 @@ export const useMessages = (language: SupportedLanguage) => {
     } finally {
       setSending(false);
     }
-  }, [sending, translateEnabled, currentLangCode, translateMessages]);
+  }, [sending, translateEnabled, currentLangCode, translateMessages, conversationId]);
 
   const addMessage = useCallback((message: Message) => {
     setMessages(prev => {
@@ -143,13 +149,31 @@ export const useMessages = (language: SupportedLanguage) => {
     setError(null);
   }, []);
 
-  // --- Translation Control Logic ---
-  const toggleTranslate = useCallback((enabled: boolean) => {
-    setTranslateEnabled(enabled);
-    if (!enabled) {
-      setMessages(prev => prev.map(m => ({ ...m, translation: undefined, translationLoading: false, translationError: false })));
-    }
+  const clearTranslationError = useCallback(() => {
+    setTranslationError(null);
   }, []);
+
+  // --- Translation Control Logic ---
+  const toggleTranslate = useCallback(() => {
+    const nextState = !translateEnabled;
+    setTranslateEnabled(nextState);
+    
+    if (nextState) {
+      // 当开启翻译时，翻译所有消息
+      const conversationId = messages[0]?.conversation_id; // 假设所有消息来自同一个会话
+      if (conversationId) {
+        translateMessages(messages, currentLangCode, conversationId);
+      }
+    } else {
+      // 当关闭翻译时，清除所有消息的翻译字段
+      setMessages(prev => 
+        prev.map(m => {
+          const { translation, ...rest } = m;
+          return rest;
+        })
+      );
+    }
+  }, [translateEnabled, translateMessages, messages, currentLangCode]);
 
   // Effect to run batch translation
   const prevLangRef = useRef<LanguageCode>();
@@ -177,8 +201,13 @@ export const useMessages = (language: SupportedLanguage) => {
   }, [translateEnabled, currentLangCode, messages, translateMessages]);
 
   useEffect(() => {
-    loadMessages();
-  }, [loadMessages]);
+    // Only load messages if we have a valid conversationId
+    if (conversationId) {
+      loadMessages();
+    } else {
+      setLoading(false); // No ID, so stop loading
+    }
+  }, [conversationId, loadMessages]);
 
   return {
     messages,
@@ -196,5 +225,7 @@ export const useMessages = (language: SupportedLanguage) => {
     translateEnabled,
     translationLoading,
     toggleTranslate,
+    translationError,
+    clearTranslationError,
   };
 };

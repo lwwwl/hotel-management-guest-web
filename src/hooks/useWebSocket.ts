@@ -12,7 +12,7 @@ export interface WebSocketState {
 
 // WebSocket Hook返回值
 export interface UseWebSocketReturn extends WebSocketState {
-  connect: (guestId: string) => Promise<void>;
+  connect: (contactId: string) => Promise<void>;
   disconnect: () => void;
   sendMessage: (message: string) => void;
   reconnect: () => Promise<void>;
@@ -28,10 +28,11 @@ export const useWebSocket = (onMessageReceived?: (notification: NotificationMess
   });
 
   const wsRef = useRef<WebSocket | null>(null);
-  const guestIdRef = useRef<string | null>(null);
+  const contactIdRef = useRef<string | null>(null);
   const reconnectTimeoutRef = useRef<number | null>(null);
   const heartbeatIntervalRef = useRef<number | null>(null);
   const messageCallbackRef = useRef(onMessageReceived);
+  const connectingRef = useRef(false);
 
   // 更新消息回调函数
   useEffect(() => {
@@ -51,28 +52,41 @@ export const useWebSocket = (onMessageReceived?: (notification: NotificationMess
   }, []);
 
   // 建立WebSocket连接
-  const connect = useCallback(async (guestId: string) => {
-    if (state.isConnecting || state.isConnected) {
+  const connect = useCallback(async (contactId: string) => {
+    if (connectingRef.current) {
+      console.log('[useWebSocket] 连接已在进行中，跳过重复请求');
       return;
     }
+
+    if (wsRef.current && wsRef.current.readyState < 2) { // 0:CONNECTING, 1:OPEN
+      console.log('[useWebSocket] WebSocket对象已存在且正在连接或已连接，跳过请求');
+      return;
+    }
+
+    connectingRef.current = true;
+    console.log(`[useWebSocket] 开始连接，contactId: ${contactId}`);
 
     try {
       setState(prev => ({ ...prev, isConnecting: true, connectionError: null }));
       
       // 获取WebSocket连接信息
-      const connectionInfo = await getGuestWebSocketConnection(guestId);
+      console.log('[useWebSocket] 正在获取WebSocket连接信息...');
+      const connectionInfo = await getGuestWebSocketConnection(contactId);
+      console.log('[useWebSocket] 收到连接信息:', connectionInfo);
       
       if (!connectionInfo.success) {
         throw new Error(connectionInfo.message || '获取连接信息失败');
       }
 
       // 建立WebSocket连接
+      console.log(`[useWebSocket] 准备连接到: ${connectionInfo.wsUrl}`);
       const ws = new WebSocket(connectionInfo.wsUrl);
       wsRef.current = ws;
-      guestIdRef.current = guestId;
+      contactIdRef.current = contactId;
 
       // 连接建立
       ws.onopen = () => {
+        connectingRef.current = false;
         console.log('WebSocket连接已建立');
         setState(prev => ({ 
           ...prev, 
@@ -118,6 +132,8 @@ export const useWebSocket = (onMessageReceived?: (notification: NotificationMess
 
       // 连接关闭
       ws.onclose = (event) => {
+        connectingRef.current = false;
+        wsRef.current = null;
         console.log('WebSocket连接已关闭:', event.code, event.reason);
         setState(prev => ({ 
           ...prev, 
@@ -135,6 +151,7 @@ export const useWebSocket = (onMessageReceived?: (notification: NotificationMess
 
       // 连接错误
       ws.onerror = (error) => {
+        connectingRef.current = false;
         console.error('WebSocket连接错误:', error);
         setState(prev => ({ 
           ...prev, 
@@ -144,14 +161,15 @@ export const useWebSocket = (onMessageReceived?: (notification: NotificationMess
       };
 
     } catch (error) {
-      console.error('建立WebSocket连接失败:', error);
+      connectingRef.current = false;
+      console.error('[useWebSocket] 建立WebSocket连接过程中发生严重错误:', error);
       setState(prev => ({ 
         ...prev, 
         isConnecting: false, 
         connectionError: error instanceof Error ? error.message : '连接失败' 
       }));
     }
-  }, [state.isConnecting, state.isConnected, cleanup]);
+  }, [cleanup]);
 
   // 断开连接
   const disconnect = useCallback(() => {
@@ -159,7 +177,7 @@ export const useWebSocket = (onMessageReceived?: (notification: NotificationMess
       wsRef.current.close(1000, '用户主动断开');
       wsRef.current = null;
     }
-    guestIdRef.current = null;
+    contactIdRef.current = null;
     cleanup();
     
     setState(prev => ({ 
@@ -181,9 +199,9 @@ export const useWebSocket = (onMessageReceived?: (notification: NotificationMess
 
   // 重连
   const reconnect = useCallback(async () => {
-    if (guestIdRef.current) {
+    if (contactIdRef.current) {
       disconnect();
-      await connect(guestIdRef.current);
+      await connect(contactIdRef.current);
     }
   }, [connect, disconnect]);
 
@@ -221,9 +239,9 @@ export const useWebSocket = (onMessageReceived?: (notification: NotificationMess
     }
     
     reconnectTimeoutRef.current = setTimeout(() => {
-      if (guestIdRef.current) {
+      if (contactIdRef.current) {
         console.log('尝试重新连接...');
-        connect(guestIdRef.current);
+        connect(contactIdRef.current);
       }
     }, 5000); // 5秒后重连
   }, [connect]);

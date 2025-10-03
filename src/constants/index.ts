@@ -1,7 +1,7 @@
-import type { QuickService, LanguageTexts } from '../types';
+import type { QuickService, LanguageTexts, SupportedLanguage } from '../types';
 
-// export const API_BASE_URL = 'http://111.223.37.162:7788';
-export const API_BASE_URL = 'https://kefu.5ok.co/api/v1';
+export const API_BASE_URL = 'https://kefu.5ok.co/api/v1/guest';
+// export const API_BASE_URL = 'http://localhost:7788';
 
 export const MOCK_MESSAGES = [
   { id: 1, sender: 'agent' as const, text: '您好！有什么可以帮助您的吗？', time: '10:00' },
@@ -33,7 +33,42 @@ export const LANGUAGES: Record<string, LanguageTexts> = {
     verifyFailed: '验证失败，请检查输入信息是否正确',
     networkError: '网络错误，请稍后重试',
     verifySuccess: '验证成功！即将跳转到聊天页面',
-    serviceConfirmed: '服务请求已提交，工作人员会尽快联系您'
+    serviceConfirmed: '服务请求已提交，工作人员会尽快联系您',
+    // --- Merged from constants.ts for VerifyPage ---
+    welcome_Verify: '欢迎光临',
+    verifyButton_Verify: '进入咨询',
+    verifyFailed_Verify: '验证失败，请检查您的姓名和手机号。',
+    networkError_Verify: '网络错误，请稍后重-试。',
+    guestNameLabel: '您的姓名',
+    guestNamePlaceholder: '请输入您的姓名',
+    phoneSuffixLabel: '手机号后四位',
+    phoneSuffixPlaceholder: '请输入手机号后四位',
+    verifyInvalidInput: '请输入姓名和手机号后四位',
+    serviceNote_Verify: '部分服务可能需要人工确认',
+    helpText_Verify: '需要帮助？请致电前台：',
+    serviceRequestTitle: '服务请求',
+    serviceRequestLabel: '备注 (可选)',
+    serviceRequestPlaceholder: '例如：需要两双筷子',
+    serviceConfirmed_Verify: '服务请求已发送',
+    // ChatPage
+    verified: '已验证',
+    webSocketConnected: 'WebSocket已连接',
+    webSocketDisconnected: 'WebSocket未连接',
+    endChat: '结束对话',
+    confirmEndChat: '确定要结束对话吗？',
+    loadingMessages: '加载消息中...',
+    loadingMore: '加载中...',
+    pullToLoadMore: '上拉加载更多',
+    noMessages: '暂无消息',
+    // Components
+    sending: '发送中...',
+    typeMessage: '输入消息...',
+    quickMenu: '快捷菜单',
+    enableAutoTranslate: '开启自动翻译',
+    disableAutoTranslate: '关闭自动翻译',
+    // ExpiredPage
+    sessionExpiredTitle: '会话已过期',
+    sessionExpiredMessage: '您的会话已结束，如需继续使用服务，请重新扫码验证身份。',
   },
   en: {
     welcome: 'Welcome',
@@ -54,7 +89,42 @@ export const LANGUAGES: Record<string, LanguageTexts> = {
     verifyFailed: 'Verification failed, please check your input',
     networkError: 'Network error, please try again later',
     verifySuccess: 'Verification successful! Redirecting to chat page',
-    serviceConfirmed: 'Service request submitted, staff will contact you soon'
+    serviceConfirmed: 'Service request submitted, staff will contact you soon',
+    // --- Merged from constants.ts for VerifyPage ---
+    welcome_Verify: 'Welcome',
+    verifyButton_Verify: 'Enter Chat',
+    verifyFailed_Verify: 'Verification failed. Please check your name and phone number.',
+    networkError_Verify: 'Network error. Please try again later.',
+    guestNameLabel: 'Your Name',
+    guestNamePlaceholder: 'Enter your name',
+    phoneSuffixLabel: 'Last 4 Digits of Phone',
+    phoneSuffixPlaceholder: 'Enter last 4 digits of phone',
+    verifyInvalidInput: 'Please enter both name and phone suffix',
+    serviceNote_Verify: 'Some services may require manual confirmation.',
+    helpText_Verify: 'Need help? Call the front desk:',
+    serviceRequestTitle: 'Service Request',
+    serviceRequestLabel: 'Notes (Optional)',
+    serviceRequestPlaceholder: 'e.g., need two pairs of chopsticks',
+    serviceConfirmed_Verify: 'Service request sent',
+    // ChatPage
+    verified: 'Verified',
+    webSocketConnected: 'WebSocket connected',
+    webSocketDisconnected: 'WebSocket disconnected',
+    endChat: 'End Chat',
+    confirmEndChat: 'Are you sure you want to end the chat?',
+    loadingMessages: 'Loading messages...',
+    loadingMore: 'Loading...',
+    pullToLoadMore: 'Pull up to load more',
+    noMessages: 'No messages yet',
+    // Components
+    sending: 'Sending...',
+    typeMessage: 'Type a message...',
+    quickMenu: 'Quick Menu',
+    enableAutoTranslate: 'Enable auto-translation',
+    disableAutoTranslate: 'Disable auto-translation',
+    // ExpiredPage
+    sessionExpiredTitle: 'Session Expired',
+    sessionExpiredMessage: 'Your session has ended. To continue, please scan the QR code again to verify your identity.',
   },
   ja: {
     welcome: 'ようこそ',
@@ -75,7 +145,42 @@ export const LANGUAGES: Record<string, LanguageTexts> = {
     verifyFailed: '確認に失敗しました。入力情報を確認してください',
     networkError: 'ネットワークエラーです。後でもう一度お試しください',
     verifySuccess: '確認成功！チャットページにリダイレクトします',
-    serviceConfirmed: 'サービスリクエストが送信されました。スタッフがすぐに連絡いたします'
+    serviceConfirmed: 'サービスリクエストが送信されました。スタッフがすぐに連絡いたします',
+    // --- Merged from constants.ts for VerifyPage ---
+    welcome_Verify: 'ようこそ',
+    verifyButton_Verify: 'チャットに入る',
+    verifyFailed_Verify: '認証に失敗しました。名前と電話番号を確認してください。',
+    networkError_Verify: 'ネットワークエラー。後でもう一度お試しください。',
+    guestNameLabel: 'お名前',
+    guestNamePlaceholder: 'お名前を入力してください',
+    phoneSuffixLabel: '電話番号の下4桁',
+    phoneSuffixPlaceholder: '電話番号の下4桁を入力してください',
+    verifyInvalidInput: '名前と電話番号の両方を入力してください',
+    serviceNote_Verify: '一部のサービスは手動での確認が必要です',
+    helpText_Verify: 'お困りですか？フロントまでお電話ください：',
+    serviceRequestTitle: 'サービスリクエスト',
+    serviceRequestLabel: '備考（任意）',
+    serviceRequestPlaceholder: '例：箸を二膳お願いします',
+    serviceConfirmed_Verify: 'サービスリクエストが送信されました',
+    // ChatPage
+    verified: '確認済み',
+    webSocketConnected: 'WebSocket接続済み',
+    webSocketDisconnected: 'WebSocket未接続',
+    endChat: 'チャット終了',
+    confirmEndChat: 'チャットを終了してもよろしいですか？',
+    loadingMessages: 'メッセージを読み込み中...',
+    loadingMore: '読み込み中...',
+    pullToLoadMore: 'プルアップしてさらに読み込む',
+    noMessages: 'メッセージはまだありません',
+    // Components
+    sending: '送信中...',
+    typeMessage: 'メッセージを入力...',
+    quickMenu: 'クイックメニュー',
+    enableAutoTranslate: '自動翻訳を有効にする',
+    disableAutoTranslate: '自動翻訳を無効にする',
+    // ExpiredPage
+    sessionExpiredTitle: 'セッションが期限切れです',
+    sessionExpiredMessage: 'セッションが終了しました。サービスを継続して利用するには、QRコードを再スキャンして本人確認を行ってください。',
   },
   ko: {
     welcome: '환영합니다',

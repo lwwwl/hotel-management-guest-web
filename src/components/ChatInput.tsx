@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslations } from '../contexts/useTranslations';
 
 interface ChatInputProps {
   inputText: string;
@@ -15,6 +16,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
   onToggleQuickMenu,
   disabled = false
 }) => {
+  const texts = useTranslations();
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey && !disabled) {
       e.preventDefault();
@@ -42,7 +44,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
           onChange={(e) => onInputChange(e.target.value)}
           onKeyPress={handleKeyPress}
           data-testid="message-input"
-          placeholder={disabled ? "发送中..." : "输入消息..."}
+          placeholder={disabled ? texts.sending : texts.typeMessage}
           disabled={disabled}
           className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 resize-none max-h-24 scrollbar-hide"
           style={{ height: 'auto', minHeight: '42px' }}
